@@ -1,0 +1,27 @@
+public class Main {
+    public static void main(String[] args) {
+        // Пример работы с HashSet
+        MyHashSet<String> hashSet = new MyHashSet<>();
+        hashSet.add("Apple");
+        hashSet.add("Banana");
+        hashSet.add("Apple"); // Дубликат не добавится
+        
+        System.out.println("HashSet: " + hashSet);
+        System.out.println("Contains 'Banana': " + hashSet.contains("Banana"));
+        hashSet.remove("Banana");
+        System.out.println("After removal: " + hashSet);
+
+        // Пример работы с TreeSet
+        MyTreeSet<Integer> treeSet = new MyTreeSet<>();
+        treeSet.add(5);
+        treeSet.add(2);
+        treeSet.add(8);
+        treeSet.add(1);
+        
+        System.out.println("\nTreeSet: " + treeSet);
+        System.out.println("First element: " + treeSet.first());
+        System.out.println("Last element: " + treeSet.last());
+        treeSet.remove(2);
+        System.out.println("After removal: " + treeSet);
+    }
+}
