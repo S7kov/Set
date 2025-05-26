@@ -1,0 +1,222 @@
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class MyHashSet<E> implements Iterable<E> {
+    private static final int DEFAULT_CAPACITY = 16;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+    
+    private Node<E>[] table;
+    private int size;
+    private final float loadFactor;
+    private int threshold;
+
+    // Узел для хранения элементов
+    private static class Node<E> {
+        final E item;
+        final int hash;
+        Node<E> next;
+
+        Node(E item, int hash, Node<E> next) {
+            this.item = item;
+            this.hash = hash;
+            this.next = next;
+        }
+    }
+
+    // Конструкторы
+    public MyHashSet() {
+        this(DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR);
+    }
+
+    public MyHashSet(int initialCapacity) {
+        this(initialCapacity, DEFAULT_LOAD_FACTOR);
+    }
+
+    @SuppressWarnings("unchecked")
+    public MyHashSet(int initialCapacity, float loadFactor) {
+        if (initialCapacity < 0)
+            throw new IllegalArgumentException("Illegal initial capacity: " + initialCapacity);
+        if (loadFactor <= 0 || Float.isNaN(loadFactor))
+            throw new IllegalArgumentException("Illegal load factor: " + loadFactor);
+        
+        this.loadFactor = loadFactor;
+        this.table = (Node<E>[]) new Node[initialCapacity];
+        this.threshold = (int)(initialCapacity * loadFactor);
+    }
+
+    // Добавление элемента
+    public boolean add(E e) {
+        if (e == null) return false;
+        
+        int hash = hash(e);
+        int index = (table.length - 1) & hash;
+        
+        // Проверка на дубликат
+        for (Node<E> node = table[index]; node != null; node = node.next) {
+            if (node.hash == hash && (node.item == e || node.item.equals(e))) {
+                return false;
+            }
+        }
+        
+        // Добавление нового элемента
+        table[index] = new Node<>(e, hash, table[index]);
+        if (++size > threshold) {
+            resize();
+        }
+        return true;
+    }
+
+    // Проверка наличия элемента
+    public boolean contains(Object o) {
+        if (o == null) return false;
+        
+        int hash = hash(o);
+        int index = (table.length - 1) & hash;
+        
+        for (Node<E> node = table[index]; node != null; node = node.next) {
+            if (node.hash == hash && (node.item == o || node.item.equals(o))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Удаление элемента
+    public boolean remove(Object o) {
+        if (o == null) return false;
+        
+        int hash = hash(o);
+        int index = (table.length - 1) & hash;
+        Node<E> prev = null;
+        
+        for (Node<E> node = table[index]; node != null; prev = node, node = node.next) {
+            if (node.hash == hash && (node.item == o || node.item.equals(o))) {
+                if (prev == null) {
+                    table[index] = node.next;
+                } else {
+                    prev.next = node.next;
+                }
+                size--;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Размер множества
+    public int size() {
+        return size;
+    }
+
+    // Проверка на пустоту
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    // Очистка множества
+    @SuppressWarnings("unchecked")
+    public void clear() {
+        if (size > 0) {
+            Arrays.fill(table, null);
+            size = 0;
+        }
+    }
+
+    // Увеличение размера таблицы
+    @SuppressWarnings("unchecked")
+    private void resize() {
+        Node<E>[] oldTable = table;
+        int oldCapacity = oldTable.length;
+        int newCapacity = oldCapacity << 1; // Удваиваем размер
+        threshold = (int)(newCapacity * loadFactor);
+        
+        Node<E>[] newTable = (Node<E>[]) new Node[newCapacity];
+        table = newTable;
+        
+        for (Node<E> head : oldTable) {
+            while (head != null) {
+                Node<E> next = head.next;
+                int index = (newCapacity - 1) & head.hash;
+                head.next = newTable[index];
+                newTable[index] = head;
+                head = next;
+            }
+        }
+    }
+
+    // Хеш-функция
+    private int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+    }
+
+    // Итератор
+    @Override
+    public Iterator<E> iterator() {
+        return new HashSetIterator();
+    }
+
+    private class HashSetIterator implements Iterator<E> {
+        private Node<E> next;
+        private Node<E> current;
+        private int index;
+
+        HashSetIterator() {
+            current = null;
+            index = 0;
+            next = null;
+            
+            // Находим первый непустой bucket
+            while (index < table.length && (next = table[index]) == null) {
+                index++;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public E next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            
+            current = next;
+            next = current.next;
+            
+            // Если в текущем bucket больше нет элементов, ищем следующий непустой bucket
+            if (next == null) {
+                index++;
+                while (index < table.length && (next = table[index]) == null) {
+                    index++;
+                }
+            }
+            
+            return current.item;
+        }
+    }
+
+    @Override
+    public String toString() {
+        if (size == 0) {
+            return "[]";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        
+        Iterator<E> it = iterator();
+        while (it.hasNext()) {
+            sb.append(it.next());
+            if (it.hasNext()) {
+                sb.append(", ");
+            }
+        }
+        
+        sb.append(']');
+        return sb.toString();
+    }
+}
